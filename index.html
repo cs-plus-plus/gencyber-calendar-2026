@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNG GenCyber AGENT Initiative 2026 — Schedule Builder</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1e;color:#d8e4f0}
+
+/* ── HEADER ──────────────────────────────────────────── */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg,#08122a,#0e1f45,#08122a);
+  border-bottom:2px solid #1c3464;
+  padding:6px 18px;height:46px;flex-shrink:0;
+}
+.hdr-left{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;overflow:hidden}
+.hdr h1{font-size:1.15rem;font-weight:800;color:#fff;white-space:nowrap}
+.hdr-dates{font-size:.8rem;color:#6a9ad0;white-space:nowrap}
+.hdr-actions{display:flex;gap:5px;flex-shrink:0}
+.btn{
+  padding:5px 14px;border-radius:6px;font-size:.78rem;font-weight:700;
+  cursor:pointer;border:1px solid #1c3464;background:#0d1b2a;color:#8ab4e0;
+  transition:all .15s;white-space:nowrap;
+}
+.btn:hover{background:#1c3464;color:#fff}
+.btn-save{border-color:#3a9c3a;color:#6acc6a}
+.btn-save:hover{background:#1a3a1a}
+.btn-reset{border-color:#6a4a1a;color:#d0a040}
+.btn-reset:hover{background:#2a1a0a}
+.btn-add{border-color:#3a9c3a;color:#6acc6a}
+.btn-add:hover{background:#1a3a1a}
+.saved-flash{color:#6acc6a;font-size:.65rem;font-weight:700;opacity:0;transition:opacity .3s}
+.saved-flash.show{opacity:1}
+
+/* ── LEGEND ──────────────────────────────────────────── */
+.legend{display:flex;gap:6px;align-items:center;margin-left:8px}
+.legend-chip{font-size:.65rem;padding:2px 7px;border-radius:8px}
+.lc-stu{background:#2e1e00;color:#ffd700;border:1px solid #6a4a00}
+.lc-tea{background:#001530;color:#5b9eff;border:1px solid #1a4090}
+.lc-comb{background:#0a2a0a;color:#4caf50;border:1px solid #1a5a1a}
+
+/* ── MAIN GRID ───────────────────────────────────────── */
+.main{
+  display:grid;
+  grid-template-columns:56px repeat(5,1fr) 210px;
+  grid-template-rows:54px 1fr;
+  height:calc(100vh - 46px);
+  overflow:hidden;
+}
+.dh{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#070e1f;border-bottom:2px solid #1c3464;border-right:1px solid #111a30;
+  padding:6px 6px;user-select:none;gap:2px;
+}
+.dh-name{font-size:.82rem;font-weight:700;color:#e0ecff}
+.dh-date{font-size:.68rem;color:#5b9eff}
+.dh-theme{font-size:.58rem;color:#3a5a7a;font-style:italic;text-align:center;line-height:1.15}
+.dh-time{
+  background:#070e1f;border-bottom:2px solid #1c3464;border-right:1px solid #111a30;
+  font-size:.65rem;color:#2a4060;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;
+}
+.dh-pool{
+  background:#070e1f;border-bottom:2px solid #1c3464;
+  font-size:.75rem;font-weight:700;color:#7a9abf;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Time gutter */
+.time-gutter{
+  grid-row:2;grid-column:1;position:relative;overflow:hidden;
+  background:#060c1a;border-right:1px solid #111a30;
+}
+.tl{
+  position:absolute;right:4px;font-size:.65rem;color:#2a4a6a;
+  transform:translateY(-50%);white-space:nowrap;pointer-events:none;
+}
+
+/* Day columns */
+.day-col{
+  grid-row:2;position:relative;overflow:hidden;
+  background:#080e1e;border-right:1px solid #0e1628;
+  touch-action:none;
+}
+
+/* Pool column */
+.pool-col{
+  grid-row:2;grid-column:7;background:#060c1a;
+  border-left:1px solid #1c3464;
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+.pool-list{
+  flex:1;overflow-y:auto;padding:6px 5px;
+  scrollbar-width:thin;scrollbar-color:#1c3464 transparent;
+  display:flex;flex-direction:column;gap:3px;
+}
+.pool-empty{color:#2a3a50;font-size:.72rem;text-align:center;padding:16px 8px;font-style:italic}
+.pool-footer{padding:4px 5px;border-top:1px solid #1c3464;display:flex;justify-content:center}
+.pool-footer .btn{font-size:.7rem;padding:4px 10px}
+
+/* ── GRID LINES ──────────────────────────────────────── */
+.grid-line{position:absolute;left:0;right:0;height:1px;pointer-events:none;z-index:0}
+.grid-line.hour{background:rgba(255,255,255,.07)}
+.grid-line.half{background:rgba(255,255,255,.03)}
+
+/* ── EVENT CARDS (on grid) ───────────────────────────── */
+.evt{
+  position:absolute;border-radius:4px;overflow:hidden;
+  cursor:grab;touch-action:none;user-select:none;
+  z-index:2;padding:1px 4px;
+  display:flex;flex-direction:column;justify-content:flex-start;
+  border-left:3px solid transparent;transition:filter .1s;
+  font-size:.68rem;line-height:1.2;
+}
+.evt:hover{filter:brightness(1.2);z-index:3}
+.evt.type-combined{background:#0e2a0e;border-left-color:#3a9c3a}
+.evt.type-students{background:#1e1400;border-left-color:#ffd700}
+.evt.type-teachers{background:#00102a;border-left-color:#5b9eff}
+.evt.type-break{background:#0e1f45;border-left-color:#1c3464}
+.evt.static{opacity:.5;cursor:default}
+.evt.static .evt-title{font-style:italic;color:#8a9ab0}
+.evt.fixed{cursor:pointer}
+.evt.fixed:hover{filter:brightness(1.3)}
+.evt-title{font-weight:600;color:#e4eeff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.evt-sub{color:#6a8aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.54rem;line-height:1.2}
+.evt-badge{
+  display:inline-block;font-size:.58rem;font-weight:700;padding:1px 4px;
+  border-radius:8px;margin-top:1px;width:fit-content;letter-spacing:.3px;
+}
+.b-stu{background:#2e1e00;color:#ffd700;border:1px solid #6a4a00}
+.b-tea{background:#001530;color:#5b9eff;border:1px solid #1a4090}
+.b-comb{background:#0a2a0a;color:#4caf50;border:1px solid #1a5a1a}
+.b-brk{background:#1a1a2a;color:#5a6a8a;border:1px solid #2a3050}
+
+/* Resize handles */
+.rh{position:absolute;left:0;right:0;height:8px;cursor:ns-resize;z-index:4}
+.rh-top{top:0;border-radius:4px 4px 0 0}
+.rh-bot{bottom:0;border-radius:0 0 4px 4px}
+.rh:hover{background:rgba(255,255,255,.15)}
+.rh-bot::after{
+  content:'';display:none;position:absolute;bottom:1px;left:50%;transform:translateX(-50%);
+  width:20px;height:2px;border-radius:1px;background:rgba(255,255,255,.3);
+}
+.rh-bot:hover::after{display:block}
+.evt.resizing{outline:2px solid rgba(74,200,120,.6);outline-offset:-1px}
+
+/* Resize snap guide — horizontal line across the day column */
+#snapGuide{
+  display:none;position:absolute;left:0;right:0;height:0;z-index:5;
+  border-top:2px dashed rgba(74,200,120,.7);
+  pointer-events:none;
+}
+#snapGuide::after{
+  content:attr(data-time);
+  position:absolute;right:2px;top:-14px;
+  font-size:.55rem;font-weight:700;color:#6acc6a;
+  background:#0a0f1e;padding:0 3px;border-radius:3px;
+}
+
+/* Resize preview box — dotted outline showing the new size */
+#resizePreview{
+  display:none;position:absolute;z-index:1;
+  border:2px dashed rgba(74,200,120,.5);border-radius:4px;
+  background:rgba(74,200,120,.06);
+  pointer-events:none;
+}
+
+/* Resize tooltip */
+#resizeTip{
+  display:none;position:fixed;z-index:10001;
+  background:#0c1830;border:1px solid #3a9c3a;border-radius:6px;
+  padding:3px 8px;font-size:.7rem;font-weight:700;color:#6acc6a;
+  white-space:nowrap;pointer-events:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.5);
+}
+
+/* ── POOL PILLS ──────────────────────────────────────── */
+.pill{
+  display:flex;align-items:center;gap:6px;
+  border-radius:14px;padding:6px 10px;
+  cursor:grab;touch-action:none;user-select:none;
+  font-size:.74rem;font-weight:600;color:#e4eeff;
+  border-left:4px solid transparent;
+  transition:filter .1s;
+  white-space:nowrap;overflow:hidden;
+  flex-shrink:0;min-width:0;
+}
+.pill-text{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+}
+.pill[title]:hover::after{
+  content:attr(title);
+  position:absolute;left:8px;top:100%;margin-top:4px;
+  background:#0c1830;color:#e4eeff;border:1px solid #1c3464;
+  border-radius:6px;padding:5px 10px;font-size:.72rem;font-weight:500;
+  white-space:nowrap;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.5);
+  pointer-events:none;
+}
+.pill{position:relative;}
+.pill:hover{filter:brightness(1.25)}
+.pill.type-combined{background:#0e2a0e;border-left-color:#3a9c3a}
+.pill.type-students{background:#1e1400;border-left-color:#ffd700}
+.pill.type-teachers{background:#00102a;border-left-color:#5b9eff}
+.pill.type-break{background:#0d1020;border-left-color:#2a3050}
+.pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pd-stu{background:#ffd700}
+.pd-tea{background:#5b9eff}
+.pd-comb{background:#4caf50}
+.pd-brk{background:#5a6a8a}
+
+/* ── INSTRUCTOR PANEL ────────────────────────────────── */
+.inst-panel{
+  border-bottom:1px solid #1c3464;padding:5px 5px 4px;flex-shrink:0;
+}
+.inst-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:4px;
+}
+.inst-header span{font-size:.68rem;font-weight:700;color:#7a9abf;text-transform:uppercase;letter-spacing:.5px}
+.inst-header button{
+  background:none;border:1px solid #1c3464;color:#6acc6a;
+  font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:4px;cursor:pointer;
+}
+.inst-header button:hover{background:#1a3a1a}
+.inst-list{display:flex;flex-wrap:wrap;gap:3px}
+.inst-chip{
+  display:flex;align-items:center;gap:3px;
+  background:#0d1b2a;border:1px solid #1c3464;border-radius:10px;
+  padding:2px 6px 2px 8px;font-size:.65rem;color:#b0c8e0;
+}
+.inst-chip:hover{border-color:#3a5a80}
+.inst-chip .inst-x{
+  cursor:pointer;color:#5a6a80;font-size:.7rem;line-height:1;
+  margin-left:2px;
+}
+.inst-chip .inst-x:hover{color:#ff7070}
+
+/* ── DRAG GHOST ──────────────────────────────────────── */
+.drag-ghost{
+  position:fixed;z-index:10000;pointer-events:none;opacity:.82;
+  border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+
+/* Drop indicators */
+#dropInd{
+  position:fixed;z-index:9999;pointer-events:none;display:none;
+  border-radius:4px;transition:background .1s,border-color .1s;
+}
+#dropInd.ok{background:rgba(74,200,120,.12);border:2px dashed rgba(74,200,120,.5)}
+#dropInd.blocked{background:rgba(255,80,80,.12);border:2px dashed rgba(255,80,80,.5)}
+#poolHighlight{
+  position:absolute;inset:0;z-index:1;pointer-events:none;display:none;
+  background:rgba(74,158,255,.08);border:2px dashed rgba(74,158,255,.3);
+}
+
+/* ── CONTEXT MENU ────────────────────────────────────── */
+.ctx-menu{
+  display:none;position:fixed;z-index:30000;
+  background:#0c1830;border:1px solid #1c3464;border-radius:6px;
+  box-shadow:0 6px 24px rgba(0,0,0,.6);overflow:hidden;min-width:120px;
+}
+.ctx-menu.open{display:block}
+.ctx-item{
+  padding:7px 16px;font-size:.82rem;color:#b0c8e0;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+}
+.ctx-item:hover{background:#1c3464;color:#fff}
+.ctx-sep{height:1px;background:#1c3464;margin:2px 0}
+.ctx-del{color:#ff7070}
+.ctx-del:hover{background:#2a0a0a}
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:20000;align-items:center;justify-content:center;padding:16px;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:#0c1830;border:1px solid #1c3464;border-radius:10px;
+  width:100%;max-width:440px;max-height:90vh;overflow-y:auto;
+  padding:18px;position:relative;
+  box-shadow:0 16px 50px rgba(0,0,0,.6);
+  scrollbar-width:thin;scrollbar-color:#1c3464 transparent;
+}
+.modal-close{
+  position:absolute;top:10px;right:10px;background:none;border:1px solid #1c3464;
+  color:#7a9abf;width:22px;height:22px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;
+}
+.modal-close:hover{background:#1c3464;color:#fff}
+.modal h3{font-size:1.05rem;color:#fff;margin-bottom:12px}
+.modal label{
+  display:block;margin-bottom:7px;font-size:.72rem;
+  color:#5a7a9a;text-transform:uppercase;letter-spacing:.7px;font-weight:700;
+}
+.modal input,.modal select,.modal textarea{
+  display:block;width:100%;margin-top:2px;padding:6px 8px;
+  background:#060e1e;border:1px solid #1c3464;border-radius:5px;
+  color:#d8e4f0;font-size:.85rem;font-family:inherit;
+}
+.modal input:focus,.modal select:focus,.modal textarea:focus{outline:none;border-color:#4a7cc4}
+.modal textarea{resize:vertical;min-height:36px}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.modal-actions{display:flex;gap:6px;margin-top:12px;justify-content:space-between}
+.modal-actions .btn{padding:6px 18px;font-size:.82rem}
+.btn-save{border-color:#3a9c3a;color:#6acc6a}.btn-save:hover{background:#1a3a1a}
+.btn-del{border-color:#6a1a1a;color:#ff6a6a}.btn-del:hover{background:#2a0a0a}
+.btn-cancel{border-color:#2a3a50;color:#7a9abf}
+
+@page{size:landscape;margin:8mm}
+@media print{
+  html,body{height:auto;overflow:visible;background:#0a0f1e;color:#d8e4f0;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}
+  .hdr{background:linear-gradient(135deg,#08122a,#0e1f45,#08122a);border-bottom:2px solid #1c3464;padding:8px 12px;height:auto;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .hdr h1{color:#fff}.hdr-dates{color:#8ab4e0}
+  .hdr-actions,.legend,.pool-col,.dh-pool,.inst-panel,#dropInd,#ctxMenu,.modal-bg,#poolHighlight{display:none!important}
+  .main{
+    grid-template-columns:50px repeat(5,1fr);
+    grid-template-rows:30px 1fr;
+    height:auto;min-height:90vh;
+  }
+  .dh{background:#070e1f!important;border-color:#1c3464;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .dh-name{color:#e0ecff!important}.dh-date{color:#5b9eff!important}.dh-theme{color:#3a5a7a!important}
+  .dh-time{background:#070e1f!important;border-color:#1c3464;color:#2a4060!important;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .time-gutter{background:#060c1a!important;border-color:#111a30;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .tl{color:#2a4a6a!important}
+  .day-col{background:#080e1e!important;border-color:#0e1628;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .grid-line.hour{background:rgba(255,255,255,.07)!important}
+  .grid-line.half{background:rgba(255,255,255,.03)!important}
+  .evt{border-radius:3px;border-left-width:4px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .evt.type-combined{background:#0e2a0e!important;border-left-color:#3a9c3a!important}
+  .evt.type-students{background:#1e1400!important;border-left-color:#ffd700!important}
+  .evt.type-teachers{background:#00102a!important;border-left-color:#5b9eff!important}
+  .evt.type-break{background:#0e1f45!important;border-left-color:#1c3464!important}
+  .evt-title{color:#e4eeff!important}
+  .evt-sub{color:#6a8aaa!important}
+  .evt-badge{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .b-stu{background:#2e1e00!important;color:#ffd700!important;border-color:#6a4a00!important}
+  .b-tea{background:#001530!important;color:#5b9eff!important;border-color:#1a4090!important}
+  .b-comb{background:#0a2a0a!important;color:#4caf50!important;border-color:#1a5a1a!important}
+  .b-brk{background:#0e1f45!important;color:#5a6a8a!important;border-color:#1c3464!important}
+  .evt.static{opacity:.55}
+  .evt.static .evt-title{color:#8a9ab0!important}
+  .rh{display:none}
+  .saved-flash{display:none}
+}
+@media(max-width:900px){
+  .main{grid-template-columns:40px repeat(5,1fr) 130px}
+  .hdr h1{font-size:.82rem}
+}
+
+/* ── PASSWORD GATE ───────────────────────────────────── */
+.pw-gate{
+  position:fixed;inset:0;z-index:50000;
+  background:linear-gradient(135deg,#08122a,#0e1f45,#08122a);
+  display:flex;align-items:center;justify-content:center;
+}
+.pw-gate.hidden{display:none}
+.pw-box{
+  background:#0c1830;border:1px solid #1c3464;border-radius:12px;
+  padding:30px 36px;text-align:center;box-shadow:0 16px 50px rgba(0,0,0,.6);
+  max-width:340px;width:90%;
+}
+.pw-box h2{font-size:1.1rem;color:#fff;margin-bottom:4px}
+.pw-box p{font-size:.75rem;color:#6a9ad0;margin-bottom:16px}
+.pw-box input{
+  width:100%;padding:8px 12px;background:#060e1e;border:1px solid #1c3464;
+  border-radius:6px;color:#d8e4f0;font-size:.9rem;text-align:center;
+  font-family:inherit;margin-bottom:10px;
+}
+.pw-box input:focus{outline:none;border-color:#4a7cc4}
+.pw-box button{
+  padding:7px 24px;border-radius:6px;font-size:.8rem;font-weight:700;
+  cursor:pointer;border:1px solid #3a9c3a;background:#0d1b2a;color:#6acc6a;
+}
+.pw-box button:hover{background:#1a3a1a}
+.pw-err{color:#ff7070;font-size:.72rem;margin-top:6px;display:none}
+</style>
+</head>
+<body>
+
+<div class="pw-gate" id="pwGate">
+  <div class="pw-box">
+    <h2>UNG GenCyber 2026</h2>
+    <p>Schedule Builder</p>
+    <input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw()">
+    <br>
+    <button onclick="checkPw()">Enter</button>
+    <div class="pw-err" id="pwErr">Incorrect password</div>
+  </div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-left">
+    <h1>UNG GenCyber AGENT Initiative 2026</h1>
+    <span class="hdr-dates">June 8&ndash;12 &bull; 8:30 AM&ndash;5:00 PM</span>
+    <div class="legend">
+      <span class="legend-chip lc-stu">Students</span>
+      <span class="legend-chip lc-tea">Teachers</span>
+      <span class="legend-chip lc-comb">All</span>
+    </div>
+  </div>
+  <div class="hdr-actions">
+    <span class="saved-flash" id="savedFlash">Saved!</span>
+    <button class="btn btn-save" onclick="saveData()">Save</button>
+    <button class="btn btn-reset" onclick="resetData()">Reset</button>
+    <button class="btn btn-add" onclick="addEvent()">+ Add</button>
+    <button class="btn" onclick="savePDF()" style="border-color:#5a5aaa;color:#a0a0ee">PDF</button>
+  </div>
+</header>
+
+<div class="main" id="mainGrid">
+  <div class="dh dh-time" style="grid-column:1">Time</div>
+  <div class="dh" style="grid-column:2"><span class="dh-name">Monday</span><span class="dh-date">Jun 8</span><span class="dh-theme">Confidentiality</span></div>
+  <div class="dh" style="grid-column:3"><span class="dh-name">Tuesday</span><span class="dh-date">Jun 9</span><span class="dh-theme">Integrity &amp; Availability</span></div>
+  <div class="dh" style="grid-column:4"><span class="dh-name">Wednesday</span><span class="dh-date">Jun 10</span><span class="dh-theme">Think Like an Adversary</span></div>
+  <div class="dh" style="grid-column:5"><span class="dh-name">Thursday</span><span class="dh-date">Jun 11</span><span class="dh-theme">Defense in Depth</span></div>
+  <div class="dh" style="grid-column:6"><span class="dh-name">Friday</span><span class="dh-date">Jun 12</span><span class="dh-theme">Keep It Simple</span></div>
+  <div class="dh dh-pool" style="grid-column:7">Event Pool</div>
+
+  <div class="time-gutter" id="timeGutter"></div>
+  <div class="day-col" id="d0" style="grid-column:2"></div>
+  <div class="day-col" id="d1" style="grid-column:3"></div>
+  <div class="day-col" id="d2" style="grid-column:4"></div>
+  <div class="day-col" id="d3" style="grid-column:5"></div>
+  <div class="day-col" id="d4" style="grid-column:6"></div>
+  <div class="pool-col" id="poolCol" style="grid-column:7">
+    <div class="inst-panel">
+      <div class="inst-header"><span>Instructors</span><button onclick="addInstructor()">+ Add</button></div>
+      <div class="inst-list" id="instList"></div>
+    </div>
+    <div class="pool-list" id="poolList"></div>
+    <div class="pool-footer"><button class="btn" onclick="addToPool()">+ Add to Pool</button></div>
+    <div id="poolHighlight"></div>
+  </div>
+</div>
+
+<div id="dropInd"></div>
+<div id="resizeTip"></div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" id="ctxEdit">Edit</div>
+  <div class="ctx-item" id="ctxDup">Duplicate</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item ctx-del" id="ctxDel">Delete</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle">Edit Event</h3>
+    <form id="editForm" onsubmit="saveModal(event)">
+      <label>Title<input name="title" required></label>
+      <div class="modal-row">
+        <label>Type
+          <select name="type">
+            <option value="combined">All (Combined)</option>
+            <option value="students">Students</option>
+            <option value="teachers">Teachers</option>
+            <option value="break">Break</option>
+          </select>
+        </label>
+        <label>Location
+          <select name="location">
+            <option value="">(none)</option>
+            <option value="Room 420">Room 420</option>
+            <option value="Room 421">Room 421</option>
+            <option value="Room 109">Room 109</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-row">
+        <label>Day
+          <select name="day">
+            <option value="">Pool (Unassigned)</option>
+            <option value="0">Monday &mdash; Jun 8</option>
+            <option value="1">Tuesday &mdash; Jun 9</option>
+            <option value="2">Wednesday &mdash; Jun 10</option>
+            <option value="3">Thursday &mdash; Jun 11</option>
+            <option value="4">Friday &mdash; Jun 12</option>
+          </select>
+        </label>
+        <label>Duration
+          <select name="duration">
+            <option value="15">15 min</option>
+            <option value="30">30 min</option>
+            <option value="45">45 min</option>
+            <option value="60">1 hour</option>
+            <option value="75">1h 15m</option>
+            <option value="90">1h 30m</option>
+            <option value="105">1h 45m</option>
+            <option value="120">2 hours</option>
+            <option value="150">2h 30m</option>
+            <option value="180">3 hours</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-row">
+        <label>Start Time<select name="startMin" id="selStart"></select></label>
+        <label>Confirmation
+          <select name="confirmed">
+            <option value="">N/A</option>
+            <option value="true">Confirmed</option>
+            <option value="false">Unconfirmed</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-row">
+        <label>Instructor
+          <select name="instructor1" id="selInst1"></select>
+        </label>
+        <label>Co-Instructor
+          <select name="coInstructor1" id="selCoInst1"></select>
+        </label>
+      </div>
+      <label>Description<textarea name="description" rows="2"></textarea></label>
+      <label>Notes<textarea name="notes" rows="2"></textarea></label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-del" id="btnDel" onclick="delEvent()">Delete</button>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-save">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════
+const DS = 465;   // 7:45 AM — 15 min padding above 8:00
+const DE = 1035;  // 5:15 PM — 15 min padding below 5:00
+const TM = DE-DS; // 570
+const TS = TM/15; // 38 slots
+const SNAP = 15;
+const STORE_KEY = 'genCyberSchedule2026';
+const ROOMS = ['Room 420','Room 421','Room 109'];
+
+// ═══════════════════════════════════════════════════════
+//  DEFAULT EVENT DATA (all in pool)
+// ═══════════════════════════════════════════════════════
+let nextId = 100;
+// Pool event: all type='combined', no instructors
+function E(title,loc,desc,notes,conf){
+  return{id:nextId++,day:null,startMin:510,duration:30,type:'combined',title,
+    location:ROOMS.includes(loc)?loc:'',
+    instructors:[],coInstructors:[],
+    description:desc||'',notes:notes||'',confirmed:conf===undefined?null:conf,static:false};
+}
+// Static event (Breakfast/Lunch): fixed on grid, not draggable
+function S(day,s,dur,title,loc,type){
+  return{id:nextId++,day,startMin:s,duration:dur,type:type||'break',title,
+    location:ROOMS.includes(loc)?loc:'',
+    instructors:[],coInstructors:[],description:'',notes:'',confirmed:null,static:true};
+}
+// Fixed-position but editable (click to edit, no drag/resize)
+function W(day,s,dur,title,loc){
+  return{id:nextId++,day,startMin:s,duration:dur,type:'combined',title,
+    location:ROOMS.includes(loc)?loc:'',
+    instructors:[],coInstructors:[],description:'',notes:'',confirmed:null,
+    static:false,fixed:true};
+}
+
+function defaultEvents(){
+  nextId=100;
+  return [
+  // ── STATIC: Breakfast (8:00-8:30), Warm-Up (8:30-9:00), Lunch on each day ──
+  S(0,480,30,'Breakfast','Room 420'),
+  S(1,480,30,'Breakfast','Room 420'),
+  S(2,480,30,'Breakfast','Room 420'),
+  S(3,480,30,'Breakfast','Room 420'),
+  S(4,480,30,'Breakfast','Room 420'),
+  W(0,510,30,'Warm-Up / CS Unplugged','Room 420'),
+  W(1,510,30,'Creativity Connection','Room 420'),
+  W(2,510,30,'Creativity Connection','Room 420'),
+  W(3,510,30,'Creativity Connection','Room 420'),
+  W(4,510,30,'Creativity Connection','Room 420'),
+  S(0,720,60,'Lunch','Room 420'),
+  S(1,720,60,'Lunch','Room 420'),
+  S(2,720,60,'Lunch','Room 420'),
+  S(3,720,60,'Lunch','Room 420'),
+  S(4,720,60,'Lunch','Room 420'),
+
+  // ── POOL: unique events, type=combined, no instructors ──
+  E('Ethics in Cyber Ed + NCL/CTF Intro','Room 420',
+    '9:00-9:30: Ethics in Cyber Education, Hacking Contracts\n9:30-10:00: NCL Lab Kit & CTF Competition Intro'),
+  E('K-12 Cybersecurity Education','Room 420',
+    'Overview of why cybersecurity education is essential in K-12 settings.'),
+  E('Cryptography / Steganography','Room 421',
+    'Hands-on exploration of cryptographic techniques and steganography.'),
+  E('Digital Footprint Activity','Room 420',
+    'Protecting Yourself Online and Offline.'),
+  E('Advanced Social Engineering with Kali','Room 421',
+    'Hands-on lab using Kali Linux social engineering attack vectors.'),
+  E('Guest: Phillip Nierodzik — IBM Security','Room 420',
+    'Guest lecture from Phillip Nierodzik of IBM Security.','Backup: Reverse Engineering Malware',false),
+  E('Cyber.org Resources','Room 420',
+    'Curriculum, Cyber Range, and CTF resources from Cyber.org.'),
+  E('Running Cyber Competitions + Cyber Patriot','Room 420',
+    'Running your own class/school cyber competitions.\nIntro to Cyber Patriot.'),
+  E('Pedagogy Lab: Outcomes & Deliverables','Room 420',
+    'Introduction to program outcomes, expected deliverables, and collaboration framework.'),
+  E('Terminus: Intro to Linux','Room 420',
+    'Hands-on introduction to the Linux command line using the Terminus game.'),
+  E('Password Security: Have I Been Pwnd?','Room 420',
+    'Hashes, Salts, What makes a good password, MFA.'),
+  E('Web Hacking: Metasploit XSS + SQLi','Room 421',
+    'Hands-on web application hacking — XSS and SQL Injection.'),
+  E('Cyber.org: Create a Good Password','Room 420',
+    'Using Cyber.org resources to create strong passwords.'),
+  E('K-12 Cyber Ed + Pringles Can Enigma','Room 421',
+    'K-12 cybersecurity education needs + Pringles Can Enigma activity.'),
+  E('Guest: Jen Marden — UAH RING Project','Room 420',
+    'Extended lecture on UAH Research and Innovation in STEM.',null,true),
+  E('Hack Solitaire + Raspberry Pi Setup','Room 420',
+    'Hack Solitaire activity.\nSet up Raspberry Pi\'s.'),
+  E('Pedagogy Lab: Teacher Activity','Room 420',
+    'Collaborative teacher activity and planning session.'),
+  E('Using Raspberry Pi\'s in the Classroom','Room 420',
+    'Hands-on introduction to using Raspberry Pi in K-12 cybersecurity.'),
+  E('Intro to Cryptography (code.org)','Room 420',
+    'Caesar Shift, Vigenere, Random Substitution Cipher widget.'),
+  E('Ethical Hacking Intro & Env Setup','Room 421',
+    'Introduction to ethical hacking concepts and lab environment setup.'),
+  E('Enigma Machine & Pringles Can Enigma','Room 420',
+    'Historical exploration of the Enigma machine and hands-on activity.'),
+  E('Sniffing Passwords with Wireshark','Room 421',
+    'Hands-on Cyber.org lab — capturing and analyzing network traffic.'),
+  E('Guest: Shaffick Mohammed','Room 420',
+    'Guest lecture.','UNCONFIRMED — confirm speaker and topic',false),
+  E('Cyber Careers Escape Room + NICE','Room 109',
+    'Interactive Cyber Careers Escape Room and NICE career pathways.'),
+  E('Afternoon Pedagogical Connections','Room 420',
+    'Continued activities and collaborative session.'),
+  E('Pedagogy Lab: Lesson Development','Room 420',
+    'Lesson development, collaborative planning, and reflection.'),
+  E('SQL Murder Mystery','Room 420',
+    'Hands-on SQL investigation — learn SQL queries by solving a crime.'),
+  E('Team CTF — Students & Teachers Together','Room 420',
+    'Capture The Flag competition with both teams competing together.'),
+  E('Guest: Dr. Abegaz — AI Agents & Cyber','Room 420',
+    'AI Agents and the Future of Cybersecurity.',null,true),
+  E('Summer Honors Mentor Remix Groups','Room 420',
+    'Mentor remix group sessions with Summer Honors students.'),
+  E('Cyber & AI Connected Lessons + Demo','Room 420',
+    'Cyber and AI Connected Lessons + Cyber Demo with Summer Honors.'),
+  E('Car-Hacking + Working with IT','Room 421',
+    'Car-Hacking w/ OpenGarages.org\nWorking with IT for Cyber Instruction.'),
+  E('Students Team Next Steps','Room 420',
+    'Planning session for next steps and program continuation.','REQUIRED for endorsement.'),
+  E('Basic Cryptography with GPG','Room 421',
+    'GPG: encryption, digital signatures, key management.'),
+  E('Basic Scripting / JavaScript Coding','Room 420',
+    'Introduction to scripting for cybersecurity using JavaScript.'),
+  E('Lab Wrap-Up Time','Room 421',
+    'Lab debrief and key takeaways from the week.'),
+  E('Guest: Cori Carver — FBI Computer Scientist','Room 420',
+    'A Day in the Life of an FBI Computer Scientist.','UNCONFIRMED',false),
+  E('Set Up VMs','Room 420',
+    'Virtual machine setup for take-home use.'),
+  E('Teacher Hack Panel + AGENT Cup Winners','Room 420',
+    'Teacher Hack Panel.\nClose the AGENT Cup — Announce winners!'),
+  E('Pedagogy Lab: Final Planning & Reflection','Room 420',
+    'Final collaborative session and program wrap-up.'),
+  ];
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let events = [];
+let SH = 0;
+const INST_KEY = 'genCyberInstructors2026';
+let roster = ['Lindsay','April','Jon','Kevin'];
+
+const BLOB_API='https://jsonblob.com/api/jsonBlob';
+let blobId=null;
+
+function getBlobIdFromHash(){
+  const h=location.hash;
+  const m=h.match(/blob=([a-f0-9-]+)/i);
+  return m?m[1]:null;
+}
+
+async function loadData(){
+  // Try cloud first
+  blobId=getBlobIdFromHash();
+  if(blobId){
+    try{
+      const res=await fetch(BLOB_API+'/'+blobId);
+      if(res.ok){
+        const data=await res.json();
+        events=data.events||defaultEvents();
+        roster=data.roster||['Lindsay','April','Jon','Kevin'];
+        nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;
+        return;
+      }
+    }catch(e){console.warn('Cloud load failed, using local',e);}
+  }
+  // Fallback to localStorage
+  const raw=localStorage.getItem(STORE_KEY);
+  if(raw){
+    try{events=JSON.parse(raw);nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;}
+    catch(e){events=defaultEvents();}
+  } else {events=defaultEvents();}
+  const ri=localStorage.getItem(INST_KEY);
+  if(ri){try{roster=JSON.parse(ri);}catch(e){}}
+}
+
+async function saveData(){
+  const fl=document.getElementById('savedFlash');
+  fl.textContent='Saving...';fl.classList.add('show');
+
+  const payload=JSON.stringify({events,roster});
+  // Always save locally
+  localStorage.setItem(STORE_KEY,JSON.stringify(events));
+  localStorage.setItem(INST_KEY,JSON.stringify(roster));
+
+  try{
+    if(blobId){
+      // Update existing blob
+      await fetch(BLOB_API+'/'+blobId,{method:'PUT',headers:{'Content-Type':'application/json'},body:payload});
+    } else {
+      // Create new blob
+      const res=await fetch(BLOB_API,{method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+      if(res.ok){
+        const loc=res.headers.get('Location')||'';
+        blobId=loc.split('/').pop();
+        if(blobId) location.hash='blob='+blobId;
+      }
+    }
+    fl.textContent='Saved & Synced!';
+  }catch(e){
+    console.warn('Cloud save failed',e);
+    fl.textContent='Saved locally';
+  }
+  setTimeout(()=>fl.classList.remove('show'),1800);
+}
+
+function resetData(){
+  if(!confirm('Reset all events to default pool? This will clear your saved layout.')) return;
+  localStorage.removeItem(STORE_KEY);
+  localStorage.removeItem(INST_KEY);
+  events=defaultEvents();
+  roster=['Lindsay','April','Jon','Kevin'];
+  render();
+  // Also update cloud if connected
+  if(blobId) saveData();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function px(min){ return ((min-DS)/15)*SH; }
+function fmt(m){
+  const h=Math.floor(m/60),mn=m%60,ap=h>=12?'PM':'AM',h12=h>12?h-12:h===0?12:h;
+  return h12+':'+(mn<10?'0':'')+mn+' '+ap;
+}
+function getEvt(id){ return events.find(e=>e.id===id); }
+
+// ═══════════════════════════════════════════════════════
+//  OVERLAP DETECTION
+// ═══════════════════════════════════════════════════════
+function canPlace(eid, day, startMin, duration, type){
+  if(day===null) return true; // pool always OK
+  const endMin = startMin + duration;
+  // clamp to grid bounds
+  if(startMin < 480 || endMin > 1020) return false;
+  const others = events.filter(e => e.day===day && e.id!==eid);
+  for(const o of others){
+    const oEnd = o.startMin + o.duration;
+    // check time overlap
+    if(!(endMin <= o.startMin || oEnd <= startMin)){
+      // they overlap in time — is it allowed?
+      const pair = [type, o.type].sort().join('+');
+      if(pair === 'students+teachers') continue; // allowed side-by-side
+      return false; // blocked
+    }
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════════════════
+function recalc(){
+  const col=document.getElementById('d0');
+  SH=col.clientHeight/TS;
+}
+
+function render(){
+  recalc();
+  renderTimeGutter();
+  for(let d=0;d<5;d++) renderDay(d);
+  renderPool();
+  renderRoster();
+}
+
+function renderRoster(){
+  const el=document.getElementById('instList');
+  el.innerHTML=roster.map((name,i)=>
+    `<span class="inst-chip">${name}<span class="inst-x" onclick="removeInstructor(${i})">&times;</span></span>`
+  ).join('');
+}
+
+function addInstructor(){
+  const name=prompt('Enter instructor name:');
+  if(!name||!name.trim()) return;
+  const trimmed=name.trim();
+  if(roster.includes(trimmed)){alert('Already in roster.');return;}
+  roster.push(trimmed);
+  roster.sort((a,b)=>a.localeCompare(b));
+  render();
+}
+
+function removeInstructor(i){
+  if(!confirm('Remove "'+roster[i]+'" from roster?')) return;
+  roster.splice(i,1);
+  render();
+}
+
+function renderTimeGutter(){
+  const el=document.getElementById('timeGutter');
+  let h='';
+  for(let m=480;m<=1020;m+=60){
+    h+=`<div class="tl" style="top:${px(m)}px">${fmt(m)}</div>`;
+  }
+  el.innerHTML=h;
+}
+
+function badgeHTML(type){
+  if(type==='students') return '<span class="evt-badge b-stu">Students</span>';
+  if(type==='teachers') return '<span class="evt-badge b-tea">Teachers</span>';
+  if(type==='combined') return '<span class="evt-badge b-comb">All</span>';
+  return '<span class="evt-badge b-brk">Break</span>';
+}
+
+function renderDay(d){
+  const col=document.getElementById('d'+d);
+  let h='';
+  // Grid lines
+  for(let m=480;m<=1020;m+=15){
+    const isH=m%60===0,is30=m%30===0;
+    if(isH) h+=`<div class="grid-line hour" style="top:${px(m)}px"></div>`;
+    else if(is30) h+=`<div class="grid-line half" style="top:${px(m)}px"></div>`;
+  }
+  const dayEvts=events.filter(e=>e.day===d);
+  for(const ev of dayEvts){
+    const top=px(ev.startMin);
+    const ht=ev.duration/15*SH;
+    let left='1px',width='calc(100% - 2px)';
+    if(ev.type==='students'){left='1px';width='calc(50% - 2px)';}
+    else if(ev.type==='teachers'){left='50%';width='calc(50% - 1px)';}
+
+    const instStr=ev.instructors.length?ev.instructors.join(', '):'';
+    const coStr=ev.coInstructors.length?ev.coInstructors.join(', '):'';
+    const locStr=ev.location||'';
+    const showBadge=ht>60;
+
+    const isStatic=ev.static;
+    const isFixed=ev.fixed;
+    const noInteract=isStatic;
+    const noResize=isStatic||isFixed;
+    const cls=`evt type-${ev.type}${isStatic?' static':''}${isFixed?' fixed':''}`;
+    h+=`<div class="${cls}" ${noInteract?'':'data-eid="'+ev.id+'"'}
+      style="top:${top}px;height:${ht-1}px;left:${left};width:${width}">
+      <div class="evt-title">${ev.title}</div>
+      ${showBadge&&!isStatic?badgeHTML(ev.type):''}
+      ${locStr&&!isStatic?`<div class="evt-sub">${locStr}</div>`:''}
+      ${instStr&&!isStatic?`<div class="evt-sub">Instructor: ${instStr}</div>`:''}
+      ${coStr&&!isStatic?`<div class="evt-sub">Co-Instructor: ${coStr}</div>`:''}
+      ${noResize?'':`<div class="rh rh-top"></div><div class="rh rh-bot"></div>`}
+    </div>`;
+  }
+  col.innerHTML=h;
+}
+
+function renderPool(){
+  const list=document.getElementById('poolList');
+  const poolEvts=events.filter(e=>e.day===null);
+  if(!poolEvts.length){
+    list.innerHTML='<div class="pool-empty">Drag events here<br>to unassign them</div>';
+    return;
+  }
+  const dotClass={students:'pd-stu',teachers:'pd-tea',combined:'pd-comb',break:'pd-brk'};
+  let h='';
+  for(const ev of poolEvts){
+    h+=`<div class="pill type-${ev.type}" data-eid="${ev.id}" title="${ev.title.replace(/"/g,'&quot;')}">
+      <span class="pill-dot ${dotClass[ev.type]||'pd-comb'}"></span>
+      <span class="pill-text">${ev.title}</span>
+    </div>`;
+  }
+  list.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAG & RESIZE
+// ═══════════════════════════════════════════════════════
+let drag=null;
+
+document.addEventListener('pointerdown',e=>{
+  if(document.getElementById('modalBg').classList.contains('open')) return;
+  if(document.getElementById('ctxMenu').classList.contains('open')) return;
+  const isTop=e.target.classList.contains('rh-top');
+  const isBot=e.target.classList.contains('rh-bot');
+  // For resize handles, find the parent .evt; otherwise find the clicked [data-eid]
+  const card=(isTop||isBot)?e.target.closest('.evt'):e.target.closest('[data-eid]');
+  if(!card) return;
+  if(e.button!==0) return; // only left click
+  const eid=+card.dataset.eid;
+  const ev=getEvt(eid);
+  if(!ev) return;
+  e.preventDefault();
+
+  // Fixed events: click-to-edit only, no drag
+  if(ev.fixed){
+    openModal(eid);
+    return;
+  }
+
+  const rect=card.getBoundingClientRect();
+  const isPool=card.classList.contains('pill');
+
+  drag={
+    eid, mode:isTop?'rtop':isBot?'rbot':'move',
+    sx:e.clientX, sy:e.clientY,
+    ox:e.clientX-rect.left, oy:e.clientY-rect.top,
+    w:rect.width, h:rect.height,
+    origDay:ev.day, origStart:ev.startMin, origDur:ev.duration,
+    moved:false, ghost:null, el:card, isPool,
+  };
+});
+
+document.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  e.preventDefault();
+  const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  if(!drag.moved){
+    if(Math.abs(dx)<4&&Math.abs(dy)<4) return;
+    drag.moved=true;
+    if(drag.mode==='move'){
+      const ev=getEvt(drag.eid);
+      drag.ghost=document.createElement('div');
+      drag.ghost.className='drag-ghost type-'+(ev.type||'combined');
+      const colors={students:'#ffd700',teachers:'#5b9eff',combined:'#3a9c3a',break:'#2a3050'};
+      const bgs={students:'#1e1400',teachers:'#00102a',combined:'#0e2a0e',break:'#0d1020'};
+      drag.ghost.style.cssText=`position:fixed;z-index:10000;pointer-events:none;
+        width:${drag.isPool?140:drag.w}px;height:${drag.isPool?24:drag.h}px;
+        opacity:.82;padding:3px 6px;border-radius:4px;border-left:3px solid ${colors[ev.type]||'#3a9c3a'};
+        background:${bgs[ev.type]||'#0e2a0e'};font-size:.6rem;font-weight:600;color:#e4eeff;
+        overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5);`;
+      drag.ghost.textContent=ev.title;
+      document.body.appendChild(drag.ghost);
+      drag.el.style.opacity='.2';
+    }
+  }
+
+  if(drag.mode==='move'&&drag.ghost){
+    drag.ghost.style.left=(e.clientX-drag.ox)+'px';
+    drag.ghost.style.top=(e.clientY-drag.oy)+'px';
+    showDropInd(e.clientX,e.clientY);
+  } else if(drag.mode==='rbot'){
+    drag.el.classList.add('resizing');
+    const newH=Math.max(SH,drag.h+dy);
+    const slots=Math.max(1,Math.round(newH/SH));
+    const ev=getEvt(drag.eid);
+    const maxSlots=(1020-ev.startMin)/15;
+    const clamped=Math.min(slots,maxSlots);
+    const newDur=clamped*15;
+    if(canPlace(drag.eid,ev.day,ev.startMin,newDur,ev.type)){
+      drag.el.style.height=(clamped*SH-1)+'px';
+      drag._dur=newDur;
+      const endMin=ev.startMin+newDur;
+      showResizeTip(e.clientX,e.clientY,ev.startMin,newDur);
+      showSnapGuide(ev.day,endMin);
+      showResizePreview(ev.day,ev.startMin+drag.origDur,newDur-drag.origDur,ev.type);
+    }
+  } else if(drag.mode==='rtop'){
+    drag.el.classList.add('resizing');
+    const origTopPx=px(drag.origStart);
+    const newTop=origTopPx+dy;
+    const slot=Math.max(0,Math.round(newTop/SH));
+    const newStart=DS+slot*15;
+    const maxStart=drag.origStart+drag.origDur-15;
+    const clamped=Math.max(480,Math.min(newStart,maxStart));
+    const endMin=drag.origStart+drag.origDur;
+    const newDur=endMin-clamped;
+    const ev=getEvt(drag.eid);
+    if(canPlace(drag.eid,ev.day,clamped,newDur,ev.type)){
+      const cTop=px(clamped);
+      drag.el.style.top=cTop+'px';
+      drag.el.style.height=(newDur/15*SH-1)+'px';
+      drag._start=clamped;
+      drag._dur=newDur;
+      showResizeTip(e.clientX,e.clientY,clamped,newDur);
+      showSnapGuide(ev.day,clamped);
+      showResizePreview(ev.day,clamped,newDur,ev.type);
+    }
+  }
+});
+
+document.addEventListener('pointerup',e=>{
+  if(!drag) return;
+  hideDropInd();
+  hideResizeTip();
+  hideResizeGuides();
+  if(drag.el) drag.el.classList.remove('resizing');
+  if(!drag.moved){
+    openModal(drag.eid);
+    drag=null;
+    return;
+  }
+  const ev=getEvt(drag.eid);
+  if(ev){
+    if(drag.mode==='move'){
+      const pos=getDropPos(e.clientX,e.clientY);
+      if(pos){
+        if(pos.day==='pool'){
+          ev.day=null;
+        } else {
+          const dur=drag.isPool?30:ev.duration;
+          if(canPlace(drag.eid,pos.day,pos.startMin,dur,ev.type)){
+            ev.day=pos.day;
+            ev.startMin=pos.startMin;
+            if(drag.isPool) ev.duration=30;
+          }
+          // else: blocked, revert (do nothing)
+        }
+      }
+    } else if(drag.mode==='rbot'&&drag._dur){
+      ev.duration=drag._dur;
+    } else if(drag.mode==='rtop'&&drag._start!=null){
+      ev.startMin=drag._start;
+      ev.duration=drag._dur;
+    }
+  }
+  if(drag.ghost) drag.ghost.remove();
+  drag.el.style.opacity='';
+  drag=null;
+  render();
+});
+
+function getDropPos(cx,cy){
+  const pool=document.getElementById('poolCol');
+  const pr=pool.getBoundingClientRect();
+  if(cx>=pr.left&&cx<=pr.right&&cy>=pr.top&&cy<=pr.bottom) return{day:'pool'};
+  for(let d=0;d<5;d++){
+    const col=document.getElementById('d'+d);
+    const r=col.getBoundingClientRect();
+    if(cx>=r.left&&cx<=r.right){
+      const relY=cy-r.top;
+      const slot=Math.round(relY/SH);
+      const startMin=DS+Math.max(0,Math.min(slot,TS-1))*15;
+      const clamped=Math.max(480,Math.min(startMin,1020-15));
+      return{day:d,startMin:clamped};
+    }
+  }
+  return null;
+}
+
+function showDropInd(cx,cy){
+  const ind=document.getElementById('dropInd');
+  const ph=document.getElementById('poolHighlight');
+  const pool=document.getElementById('poolCol');
+  const pr=pool.getBoundingClientRect();
+  if(cx>=pr.left&&cx<=pr.right&&cy>=pr.top&&cy<=pr.bottom){
+    ind.style.display='none';
+    ph.style.display='block';
+    return;
+  }
+  ph.style.display='none';
+
+  for(let d=0;d<5;d++){
+    const col=document.getElementById('d'+d);
+    const r=col.getBoundingClientRect();
+    if(cx>=r.left&&cx<=r.right){
+      const relY=cy-r.top;
+      const slot=Math.max(0,Math.min(Math.round(relY/SH),TS-1));
+      const startMin=DS+slot*15;
+      const clampedStart=Math.max(480,Math.min(startMin,1020-15));
+      const ev=getEvt(drag.eid);
+      const dur=drag.isPool?30:(ev?ev.duration:30);
+      const ok=canPlace(drag.eid,d,clampedStart,dur,ev?ev.type:'combined');
+      ind.className=ok?'ok':'blocked';
+      ind.style.display='block';
+      ind.style.left=r.left+'px';
+      ind.style.top=(r.top+px(clampedStart))+'px';
+      ind.style.width=r.width+'px';
+      ind.style.height=(dur/15*SH)+'px';
+      return;
+    }
+  }
+  ind.style.display='none';
+}
+
+function hideDropInd(){
+  document.getElementById('dropInd').style.display='none';
+  document.getElementById('poolHighlight').style.display='none';
+}
+
+function showResizeTip(cx,cy,startMin,dur){
+  const tip=document.getElementById('resizeTip');
+  const endMin=startMin+dur;
+  tip.textContent=fmt(startMin)+' – '+fmt(endMin)+' ('+dur+' min)';
+  tip.style.display='block';
+  tip.style.left=(cx+12)+'px';
+  tip.style.top=(cy-10)+'px';
+}
+function hideResizeTip(){
+  document.getElementById('resizeTip').style.display='none';
+}
+
+function showSnapGuide(day,min){
+  let guide=document.getElementById('snapGuide');
+  const col=document.getElementById('d'+day);
+  if(!guide){
+    guide=document.createElement('div');
+    guide.id='snapGuide';
+  }
+  if(guide.parentNode!==col) col.appendChild(guide);
+  guide.style.display='block';
+  guide.style.top=px(min)+'px';
+  guide.dataset.time=fmt(min);
+}
+
+function showResizePreview(day,startMin,dur,type){
+  let prev=document.getElementById('resizePreview');
+  const col=document.getElementById('d'+day);
+  if(!prev){
+    prev=document.createElement('div');
+    prev.id='resizePreview';
+  }
+  if(prev.parentNode!==col) col.appendChild(prev);
+  let left='1px',width='calc(100% - 2px)';
+  if(type==='students'){left='1px';width='calc(50% - 2px)';}
+  else if(type==='teachers'){left='50%';width='calc(50% - 1px)';}
+  prev.style.display='block';
+  prev.style.top=px(startMin)+'px';
+  prev.style.height=(dur/15*SH)+'px';
+  prev.style.left=left;
+  prev.style.width=width;
+}
+
+function hideResizeGuides(){
+  const g=document.getElementById('snapGuide');
+  const p=document.getElementById('resizePreview');
+  if(g) g.style.display='none';
+  if(p) p.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONTEXT MENU (right-click)
+// ═══════════════════════════════════════════════════════
+let ctxEid=null;
+
+document.addEventListener('contextmenu',e=>{
+  const card=e.target.closest('[data-eid]');
+  if(!card) return;
+  e.preventDefault();
+  ctxEid=+card.dataset.eid;
+  const menu=document.getElementById('ctxMenu');
+  menu.style.left=Math.min(e.clientX,window.innerWidth-140)+'px';
+  menu.style.top=Math.min(e.clientY,window.innerHeight-100)+'px';
+  menu.classList.add('open');
+});
+
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('ctxMenu');
+  if(!menu.classList.contains('open')) return;
+  if(!e.target.closest('.ctx-menu')) menu.classList.remove('open');
+});
+
+document.getElementById('ctxEdit').addEventListener('click',()=>{
+  document.getElementById('ctxMenu').classList.remove('open');
+  if(ctxEid!=null) openModal(ctxEid);
+});
+
+document.getElementById('ctxDup').addEventListener('click',()=>{
+  document.getElementById('ctxMenu').classList.remove('open');
+  const orig=getEvt(ctxEid);
+  if(!orig) return;
+  const dup={...orig,id:nextId++,day:null,
+    instructors:[...orig.instructors],coInstructors:[...orig.coInstructors]};
+  dup.title=orig.title+' (copy)';
+  events.push(dup);
+  render();
+});
+
+document.getElementById('ctxDel').addEventListener('click',()=>{
+  document.getElementById('ctxMenu').classList.remove('open');
+  if(ctxEid==null) return;
+  if(!confirm('Delete this event?')) return;
+  events=events.filter(e=>e.id!==ctxEid);
+  render();
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.getElementById('ctxMenu').classList.remove('open');
+    closeModal();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════
+let modalEid=null;
+
+(function(){
+  const sel=document.getElementById('selStart');
+  let h='';
+  for(let m=480;m<=1020-15;m+=15) h+=`<option value="${m}">${fmt(m)}</option>`;
+  sel.innerHTML=h;
+})();
+
+function populateInstSelects(instArr,coArr){
+  const opts='<option value="">(none)</option>'+roster.map(n=>`<option value="${n}">${n}</option>`).join('');
+  document.getElementById('selInst1').innerHTML=opts;
+  document.getElementById('selCoInst1').innerHTML=opts;
+  document.getElementById('selInst1').value=instArr[0]||'';
+  document.getElementById('selCoInst1').value=coArr[0]||'';
+}
+
+function openModal(eid){
+  const ev=getEvt(eid);
+  if(!ev) return;
+  modalEid=eid;
+  const f=document.getElementById('editForm');
+  f.title.value=ev.title;
+  f.type.value=ev.type;
+  f.location.value=ROOMS.includes(ev.location)?ev.location:'';
+  f.day.value=ev.day!==null?ev.day:'';
+  f.startMin.value=ev.startMin;
+  f.duration.value=ev.duration;
+  populateInstSelects(ev.instructors,ev.coInstructors);
+  f.description.value=ev.description;
+  f.notes.value=ev.notes;
+  f.confirmed.value=ev.confirmed===true?'true':ev.confirmed===false?'false':'';
+  document.getElementById('modalTitle').textContent='Edit Event';
+  document.getElementById('btnDel').style.display='';
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function openModalNew(ev){
+  modalEid=ev.id;
+  const f=document.getElementById('editForm');
+  f.title.value=ev.title;
+  f.type.value=ev.type;
+  f.location.value='';
+  f.day.value=ev.day!==null?ev.day:'';
+  f.startMin.value=ev.startMin;
+  f.duration.value=ev.duration;
+  populateInstSelects([],[]);
+  f.description.value='';f.notes.value='';f.confirmed.value='';
+  document.getElementById('modalTitle').textContent='New Event';
+  document.getElementById('btnDel').style.display='none';
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('open');
+  modalEid=null;
+}
+
+function saveModal(e){
+  e.preventDefault();
+  if(modalEid===null) return;
+  let ev=getEvt(modalEid);
+  const f=document.getElementById('editForm');
+  if(!ev){ev={id:modalEid};events.push(ev);}
+  ev.title=f.title.value.trim();
+  ev.type=f.type.value;
+  ev.location=f.location.value;
+  ev.day=f.day.value===''?null:+f.day.value;
+  ev.startMin=+f.startMin.value;
+  ev.duration=+f.duration.value;
+  ev.instructors=f.instructor1.value?[f.instructor1.value]:[];
+  ev.coInstructors=f.coInstructor1.value?[f.coInstructor1.value]:[];
+  ev.description=f.description.value.trim();
+  ev.notes=f.notes.value.trim();
+  ev.confirmed=f.confirmed.value===''?null:f.confirmed.value==='true';
+  closeModal();
+  render();
+}
+
+function delEvent(){
+  if(modalEid===null) return;
+  if(!confirm('Delete this event?')) return;
+  events=events.filter(e=>e.id!==modalEid);
+  closeModal();
+  render();
+}
+
+function addEvent(){
+  const ev=E(null,510,30,'combined','New Event','');
+  events.push(ev);
+  openModalNew(ev);
+}
+
+function addToPool(){
+  const ev=E(null,510,30,'combined','New Pool Event','');
+  events.push(ev);
+  openModalNew(ev);
+}
+
+function savePDF(){
+  window.print();
+}
+
+document.getElementById('modalBg').addEventListener('click',e=>{
+  if(e.target===e.currentTarget) closeModal();
+});
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+const PW='gencyber2026';
+const PW_KEY='genCyberAuth2026';
+
+function checkPw(){
+  const input=document.getElementById('pwInput').value;
+  if(input===PW){
+    sessionStorage.setItem(PW_KEY,'1');
+    document.getElementById('pwGate').classList.add('hidden');
+    initApp();
+  } else {
+    const err=document.getElementById('pwErr');
+    err.style.display='block';
+    document.getElementById('pwInput').value='';
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+
+async function initApp(){
+  await loadData();
+  window.addEventListener('resize',()=>render());
+  render();
+}
+
+// Auto-unlock if already authenticated this session
+if(sessionStorage.getItem(PW_KEY)==='1'){
+  document.getElementById('pwGate').classList.add('hidden');
+  initApp();
+} else {
+  document.getElementById('pwInput').focus();
+}
+</script>
+</body>
+</html>
