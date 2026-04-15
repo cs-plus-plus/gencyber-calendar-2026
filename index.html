@@ -119,6 +119,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1
 .evt.type-students{background:#1e1400;border-left-color:#ffd700}
 .evt.type-teachers{background:#00102a;border-left-color:#5b9eff}
 .evt.type-break{background:#0e1f45;border-left-color:#1c3464}
+.evt.unconfirmed{
+  background-image:repeating-linear-gradient(
+    -45deg,transparent,transparent 4px,rgba(255,180,50,.1) 4px,rgba(255,180,50,.1) 8px)!important;
+}
 .evt.static{opacity:.5;cursor:default}
 .evt.static .evt-title{font-style:italic;color:#8a9ab0}
 .evt.fixed{cursor:pointer}
@@ -469,12 +473,14 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1
           </select>
         </label>
         <label>Location
-          <select name="location">
+          <select name="location" id="selLoc" onchange="toggleCustomLoc()">
             <option value="">(none)</option>
             <option value="Room 420">Room 420</option>
             <option value="Room 421">Room 421</option>
             <option value="Room 109">Room 109</option>
+            <option value="__other">Other...</option>
           </select>
+          <input name="locationCustom" id="locCustom" placeholder="Type room name" style="display:none;margin-top:3px">
         </label>
       </div>
       <div class="modal-row">
@@ -555,7 +561,7 @@ function E(title,loc,desc,notes,conf){
   return{id:nextId++,day:null,startMin:510,duration:30,type:'combined',title,
     location:ROOMS.includes(loc)?loc:'',
     instructors:[],coInstructors:[],
-    description:desc||'',notes:notes||'',confirmed:conf===undefined?null:conf,static:false};
+    description:desc||'',notes:notes||'',confirmed:conf===undefined?true:conf,static:false};
 }
 // Static event (Breakfast/Lunch): fixed on grid, not draggable
 function S(day,s,dur,title,loc,type){
@@ -695,7 +701,7 @@ async function loadData(){
     if(res.ok){
       const meta=await res.json();
       fileSha=meta.sha;
-      const data=JSON.parse(atob(meta.content));
+      const data=JSON.parse(b64decode(meta.content));
       if(data.events&&data.events.length){
         events=data.events;
         roster=data.roster||['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
@@ -732,7 +738,7 @@ async function saveData(){
         'Accept':'application/vnd.github.v3+json',
         'Content-Type':'application/json'
       },
-      body:JSON.stringify({message:'sync',content:btoa(unescape(encodeURIComponent(payload))),sha:fileSha})
+      body:JSON.stringify({message:'sync',content:b64encode(payload),sha:fileSha})
     });
     if(res.ok){
       const d=await res.json();
@@ -763,6 +769,8 @@ function resetData(){
 //  HELPERS
 // ═══════════════════════════════════════════════════════
 function px(min){ return ((min-DS)/15)*SH; }
+function b64encode(str){return btoa(new TextEncoder().encode(str).reduce((s,b)=>s+String.fromCharCode(b),''));}
+function b64decode(b64){return new TextDecoder().decode(Uint8Array.from(atob(b64),c=>c.charCodeAt(0)));}
 function fmt(m){
   const h=Math.floor(m/60),mn=m%60,ap=h>=12?'PM':'AM',h12=h>12?h-12:h===0?12:h;
   return h12+':'+(mn<10?'0':'')+mn+' '+ap;
@@ -824,7 +832,7 @@ async function pollCloud(){
     if(!res.ok) return;
     const meta=await res.json();
     fileSha=meta.sha;
-    const raw=atob(meta.content);
+    const raw=b64decode(meta.content);
     if(raw!==lastHash){
       const data=JSON.parse(raw);
       events=data.events||events;
@@ -907,7 +915,8 @@ function renderDay(d){
     const isFixed=ev.fixed;
     const noInteract=isStatic;
     const noResize=isStatic||isFixed;
-    const cls=`evt type-${ev.type}${isStatic?' static':''}${isFixed?' fixed':''}`;
+    const isUnconf=ev.confirmed===false;
+    const cls=`evt type-${ev.type}${isStatic?' static':''}${isFixed?' fixed':''}${isUnconf?' unconfirmed':''}`;
     h+=`<div class="${cls}" ${noInteract?'':'data-eid="'+ev.id+'"'}
       style="top:${top}px;height:${ht-1}px;left:${left};width:${width}">
       <div class="evt-title">${ev.title}</div>
@@ -1259,6 +1268,34 @@ let modalEid=null;
   sel.innerHTML=h;
 })();
 
+function toggleCustomLoc(){
+  const sel=document.getElementById('selLoc');
+  const inp=document.getElementById('locCustom');
+  inp.style.display=sel.value==='__other'?'block':'none';
+  if(sel.value==='__other') inp.focus();
+}
+
+function setLocationField(loc){
+  const sel=document.getElementById('selLoc');
+  const inp=document.getElementById('locCustom');
+  const known=['','Room 420','Room 421','Room 109'];
+  if(known.includes(loc)){
+    sel.value=loc;
+    inp.style.display='none';
+    inp.value='';
+  } else {
+    sel.value='__other';
+    inp.style.display='block';
+    inp.value=loc;
+  }
+}
+
+function getLocationValue(){
+  const sel=document.getElementById('selLoc');
+  if(sel.value==='__other') return document.getElementById('locCustom').value.trim();
+  return sel.value;
+}
+
 function populateInstSelects(instArr,coArr){
   const opts='<option value="">(none)</option>'+roster.map(n=>`<option value="${n}">${n}</option>`).join('');
   document.getElementById('selInst1').innerHTML=opts;
@@ -1274,7 +1311,7 @@ function openModal(eid){
   const f=document.getElementById('editForm');
   f.title.value=ev.title;
   f.type.value=ev.type;
-  f.location.value=ROOMS.includes(ev.location)?ev.location:'';
+  setLocationField(ev.location);
   f.day.value=ev.day!==null?ev.day:'';
   f.startMin.value=ev.startMin;
   f.duration.value=ev.duration;
@@ -1292,7 +1329,7 @@ function openModalNew(ev){
   const f=document.getElementById('editForm');
   f.title.value=ev.title;
   f.type.value=ev.type;
-  f.location.value='';
+  setLocationField('');
   f.day.value=ev.day!==null?ev.day:'';
   f.startMin.value=ev.startMin;
   f.duration.value=ev.duration;
@@ -1316,7 +1353,7 @@ function saveModal(e){
   if(!ev){ev={id:modalEid};events.push(ev);}
   ev.title=f.title.value.trim();
   ev.type=f.type.value;
-  ev.location=f.location.value;
+  ev.location=getLocationValue();
   ev.day=f.day.value===''?null:+f.day.value;
   ev.startMin=+f.startMin.value;
   ev.duration=+f.duration.value;
