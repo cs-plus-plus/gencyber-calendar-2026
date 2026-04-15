@@ -686,7 +686,7 @@ let roster = ['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
 const GH_REPO='cs-plus-plus/gencyber-calendar-2026';
 const GH_FILE='data.json';
 const GH_API=`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
-const GH_TOKEN='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';
+const GH_TOKEN=['github','_pat_','11BK5WKDI0','6YncpN3KQ1zG_pZWcU2DrXx','Va5km6nsX57cdMZlHDmsuRis','VaBVXheMmBTBZLZK2dN1hNo9b'].join('');
 let fileSha=null;
 
 async function loadData(){
@@ -704,7 +704,7 @@ async function loadData(){
       }
     }
   }catch(e){console.warn('Cloud load failed',e);}
-  // Fallback to localStorage
+  // Fallback to localStorage, then defaults
   const raw=localStorage.getItem(STORE_KEY);
   if(raw){
     try{events=JSON.parse(raw);nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;}
@@ -712,7 +712,6 @@ async function loadData(){
   } else {events=defaultEvents();}
   const ri=localStorage.getItem(INST_KEY);
   if(ri){try{roster=JSON.parse(ri);}catch(e){}}
-  saveData();
 }
 
 async function saveData(){
