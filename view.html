@@ -125,7 +125,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1
 
 <script>
 const DS=465, DE=1035, TS=(DE-DS)/15;
-const BLOB_URL='https://jsonblob.com/api/jsonBlob/019d8f4c-cf1d-7cfa-b44f-73167cc0207c';
+const GH_API='https://api.github.com/repos/cs-plus-plus/gencyber-calendar-2026/contents/data.json';
 
 let events=[];
 let SH=0;
@@ -190,12 +190,13 @@ function badgeHTML(type){
 let lastHash='';
 async function fetchData(){
   try{
-    const res=await fetch(BLOB_URL);
+    const res=await fetch(GH_API,{headers:{'Accept':'application/vnd.github.v3+json'}});
     if(!res.ok) return;
-    const data=await res.json();
-    const hash=JSON.stringify(data);
-    if(hash!==lastHash){
-      lastHash=hash;
+    const meta=await res.json();
+    const raw=atob(meta.content);
+    if(raw!==lastHash){
+      lastHash=raw;
+      const data=JSON.parse(raw);
       events=data.events||[];
       render();
     }

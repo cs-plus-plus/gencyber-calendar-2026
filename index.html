@@ -683,16 +683,19 @@ let SH = 0;
 const INST_KEY = 'genCyberInstructors2026';
 let roster = ['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
 
-const BLOB_API='https://jsonblob.com/api/jsonBlob';
-const BLOB_ID='019d8f4c-cf1d-7cfa-b44f-73167cc0207c';
-const BLOB_URL=BLOB_API+'/'+BLOB_ID;
+const GH_REPO='cs-plus-plus/gencyber-calendar-2026';
+const GH_FILE='data.json';
+const GH_API=`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
+const GH_TOKEN='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';
+let fileSha=null;
 
 async function loadData(){
-  // Try cloud
   try{
-    const res=await fetch(BLOB_URL);
+    const res=await fetch(GH_API,{headers:{'Accept':'application/vnd.github.v3+json'}});
     if(res.ok){
-      const data=await res.json();
+      const meta=await res.json();
+      fileSha=meta.sha;
+      const data=JSON.parse(atob(meta.content));
       if(data.events&&data.events.length){
         events=data.events;
         roster=data.roster||['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
@@ -700,7 +703,7 @@ async function loadData(){
         return;
       }
     }
-  }catch(e){console.warn('Cloud load failed, using local',e);}
+  }catch(e){console.warn('Cloud load failed',e);}
   // Fallback to localStorage
   const raw=localStorage.getItem(STORE_KEY);
   if(raw){
@@ -709,7 +712,6 @@ async function loadData(){
   } else {events=defaultEvents();}
   const ri=localStorage.getItem(INST_KEY);
   if(ri){try{roster=JSON.parse(ri);}catch(e){}}
-  // Push defaults to cloud so participant view has data
   saveData();
 }
 
@@ -718,27 +720,34 @@ async function saveData(){
   if(fl){fl.textContent='Syncing...';fl.classList.add('show');}
 
   const payload=JSON.stringify({events,roster});
-  // Save locally
-  try{
-    localStorage.setItem(STORE_KEY,JSON.stringify(events));
-    localStorage.setItem(INST_KEY,JSON.stringify(roster));
-  }catch(e){}
+  try{localStorage.setItem(STORE_KEY,payload);localStorage.setItem(INST_KEY,JSON.stringify(roster));}catch(e){}
 
   try{
-    const res=await fetch(BLOB_URL,{
+    // Get current sha first
+    if(!fileSha){
+      const m=await fetch(GH_API,{headers:{'Accept':'application/vnd.github.v3+json'}});
+      if(m.ok){const d=await m.json();fileSha=d.sha;}
+    }
+    const res=await fetch(GH_API,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:payload
+      headers:{
+        'Authorization':'Bearer '+GH_TOKEN,
+        'Accept':'application/vnd.github.v3+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({message:'sync',content:btoa(unescape(encodeURIComponent(payload))),sha:fileSha})
     });
     if(res.ok){
-      if(fl) fl.textContent='Synced!';
+      const d=await res.json();
+      fileSha=d.content.sha;
       lastHash=payload;
+      if(fl) fl.textContent='Synced!';
     } else {
       if(fl) fl.textContent='Sync error '+res.status;
     }
   }catch(e){
     console.warn('Cloud save failed',e);
-    if(fl) fl.textContent='Offline — saved locally';
+    if(fl) fl.textContent='Offline';
   }
   if(fl) setTimeout(()=>fl.classList.remove('show'),1500);
 }
@@ -812,17 +821,19 @@ let lastHash='';
 function dataHash(){return JSON.stringify({events,roster});}
 
 async function pollCloud(){
-  if(drag) return; // skip during drag
+  if(drag) return;
   try{
-    const res=await fetch(BLOB_URL);
+    const res=await fetch(GH_API,{headers:{'Accept':'application/vnd.github.v3+json'}});
     if(!res.ok) return;
-    const data=await res.json();
-    const remote=JSON.stringify(data);
-    if(remote!==lastHash){
+    const meta=await res.json();
+    fileSha=meta.sha;
+    const raw=atob(meta.content);
+    if(raw!==lastHash){
+      const data=JSON.parse(raw);
       events=data.events||events;
       roster=data.roster||roster;
       nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;
-      lastHash=remote;
+      lastHash=raw;
       render();
     }
   }catch(e){}
@@ -1383,4 +1394,3 @@ if(sessionStorage.getItem(PW_KEY)==='1'){
 </script>
 </body>
 </html>
-<!-- deploy 1776226181 -->
