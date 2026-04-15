@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNG GenCyber 2026 — Schedule</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1e;color:#d8e4f0}
+
+.hdr{
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#08122a,#0e1f45,#08122a);
+  border-bottom:2px solid #1c3464;
+  padding:6px 18px;height:46px;flex-shrink:0;gap:12px;
+}
+.hdr h1{font-size:1.15rem;font-weight:800;color:#fff;white-space:nowrap}
+.hdr-dates{font-size:.8rem;color:#6a9ad0;white-space:nowrap}
+.legend{display:flex;gap:6px;align-items:center;margin-left:8px}
+.legend-chip{font-size:.65rem;padding:2px 7px;border-radius:8px}
+.lc-stu{background:#2e1e00;color:#ffd700;border:1px solid #6a4a00}
+.lc-tea{background:#001530;color:#5b9eff;border:1px solid #1a4090}
+.lc-comb{background:#0a2a0a;color:#4caf50;border:1px solid #1a5a1a}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#3a9c3a;margin-left:8px;flex-shrink:0;
+  animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.main{
+  display:grid;
+  grid-template-columns:56px repeat(5,1fr);
+  grid-template-rows:54px 1fr;
+  height:calc(100vh - 46px);
+  overflow:hidden;
+}
+.dh{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#070e1f;border-bottom:2px solid #1c3464;border-right:1px solid #111a30;
+  padding:6px 6px;user-select:none;gap:2px;
+}
+.dh-name{font-size:.82rem;font-weight:700;color:#e0ecff}
+.dh-date{font-size:.68rem;color:#5b9eff}
+.dh-theme{font-size:.58rem;color:#3a5a7a;font-style:italic;text-align:center;line-height:1.15}
+.dh-time{
+  background:#070e1f;border-bottom:2px solid #1c3464;border-right:1px solid #111a30;
+  font-size:.65rem;color:#2a4060;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;
+}
+
+.time-gutter{
+  grid-row:2;grid-column:1;position:relative;overflow:hidden;
+  background:#060c1a;border-right:1px solid #111a30;
+}
+.tl{
+  position:absolute;right:4px;font-size:.65rem;color:#2a4a6a;
+  transform:translateY(-50%);white-space:nowrap;pointer-events:none;
+}
+
+.day-col{
+  grid-row:2;position:relative;overflow:hidden;
+  background:#080e1e;border-right:1px solid #0e1628;
+}
+
+.grid-line{position:absolute;left:0;right:0;height:1px;pointer-events:none;z-index:0}
+.grid-line.hour{background:rgba(255,255,255,.07)}
+.grid-line.half{background:rgba(255,255,255,.03)}
+
+.evt{
+  position:absolute;border-radius:4px;overflow:hidden;
+  z-index:2;padding:1px 4px;
+  display:flex;flex-direction:column;justify-content:flex-start;
+  border-left:3px solid transparent;
+  font-size:.68rem;line-height:1.2;user-select:none;
+}
+.evt.type-combined{background:#0e2a0e;border-left-color:#3a9c3a}
+.evt.type-students{background:#1e1400;border-left-color:#ffd700}
+.evt.type-teachers{background:#00102a;border-left-color:#5b9eff}
+.evt.type-break{background:#0e1f45;border-left-color:#1c3464}
+.evt.static{opacity:.55}
+.evt.static .evt-title{font-style:italic;color:#8a9ab0}
+.evt-title{font-weight:600;color:#e4eeff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.evt-sub{color:#6a8aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.54rem;line-height:1.2}
+.evt-badge{
+  display:inline-block;font-size:.58rem;font-weight:700;padding:1px 4px;
+  border-radius:8px;margin-top:1px;width:fit-content;letter-spacing:.3px;
+}
+.b-stu{background:#2e1e00;color:#ffd700;border:1px solid #6a4a00}
+.b-tea{background:#001530;color:#5b9eff;border:1px solid #1a4090}
+.b-comb{background:#0a2a0a;color:#4caf50;border:1px solid #1a5a1a}
+.b-brk{background:#0e1f45;color:#5a6a8a;border:1px solid #1c3464}
+
+@media(max-width:900px){
+  .main{grid-template-columns:40px repeat(5,1fr)}
+  .hdr h1{font-size:.82rem}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <h1>UNG GenCyber AGENT Initiative 2026</h1>
+  <span class="hdr-dates">June 8&ndash;12 &bull; 8:30 AM&ndash;5:00 PM</span>
+  <div class="legend">
+    <span class="legend-chip lc-stu">Students</span>
+    <span class="legend-chip lc-tea">Teachers</span>
+    <span class="legend-chip lc-comb">All</span>
+  </div>
+  <span class="sync-dot" title="Live — updates every 5 seconds"></span>
+</header>
+
+<div class="main">
+  <div class="dh dh-time" style="grid-column:1">Time</div>
+  <div class="dh" style="grid-column:2"><span class="dh-name">Monday</span><span class="dh-date">Jun 8</span><span class="dh-theme">Confidentiality</span></div>
+  <div class="dh" style="grid-column:3"><span class="dh-name">Tuesday</span><span class="dh-date">Jun 9</span><span class="dh-theme">Integrity &amp; Availability</span></div>
+  <div class="dh" style="grid-column:4"><span class="dh-name">Wednesday</span><span class="dh-date">Jun 10</span><span class="dh-theme">Think Like an Adversary</span></div>
+  <div class="dh" style="grid-column:5"><span class="dh-name">Thursday</span><span class="dh-date">Jun 11</span><span class="dh-theme">Defense in Depth</span></div>
+  <div class="dh" style="grid-column:6"><span class="dh-name">Friday</span><span class="dh-date">Jun 12</span><span class="dh-theme">Keep It Simple</span></div>
+
+  <div class="time-gutter" id="timeGutter"></div>
+  <div class="day-col" id="d0" style="grid-column:2"></div>
+  <div class="day-col" id="d1" style="grid-column:3"></div>
+  <div class="day-col" id="d2" style="grid-column:4"></div>
+  <div class="day-col" id="d3" style="grid-column:5"></div>
+  <div class="day-col" id="d4" style="grid-column:6"></div>
+</div>
+
+<script>
+const DS=465, DE=1035, TS=(DE-DS)/15;
+const BLOB_URL='https://jsonblob.com/api/jsonBlob/019d8f4c-cf1d-7cfa-b44f-73167cc0207c';
+
+let events=[];
+let SH=0;
+
+function px(min){return((min-DS)/15)*SH;}
+function fmt(m){
+  const h=Math.floor(m/60),mn=m%60,ap=h>=12?'PM':'AM',h12=h>12?h-12:h===0?12:h;
+  return h12+':'+(mn<10?'0':'')+mn+' '+ap;
+}
+
+function recalc(){SH=document.getElementById('d0').clientHeight/TS;}
+
+function render(){
+  recalc();
+  // Time gutter
+  const tg=document.getElementById('timeGutter');
+  let th='';
+  for(let m=480;m<=1020;m+=60) th+=`<div class="tl" style="top:${px(m)}px">${fmt(m)}</div>`;
+  tg.innerHTML=th;
+  // Days
+  for(let d=0;d<5;d++){
+    const col=document.getElementById('d'+d);
+    let h='';
+    for(let m=480;m<=1020;m+=15){
+      if(m%60===0) h+=`<div class="grid-line hour" style="top:${px(m)}px"></div>`;
+      else if(m%30===0) h+=`<div class="grid-line half" style="top:${px(m)}px"></div>`;
+    }
+    const dayEvts=events.filter(e=>e.day===d);
+    for(const ev of dayEvts){
+      const top=px(ev.startMin);
+      const ht=ev.duration/15*SH;
+      let left='1px',width='calc(100% - 2px)';
+      if(ev.type==='students'){left='1px';width='calc(50% - 2px)';}
+      else if(ev.type==='teachers'){left='50%';width='calc(50% - 1px)';}
+
+      const isStatic=ev.static;
+      const showBadge=ht>60;
+      const instStr=ev.instructors&&ev.instructors.length?ev.instructors.join(', '):'';
+      const coStr=ev.coInstructors&&ev.coInstructors.length?ev.coInstructors.join(', '):'';
+      const locStr=ev.location||'';
+
+      h+=`<div class="evt type-${ev.type}${isStatic?' static':''}"
+        style="top:${top}px;height:${ht-1}px;left:${left};width:${width}">
+        <div class="evt-title">${ev.title}</div>
+        ${showBadge&&!isStatic?badgeHTML(ev.type):''}
+        ${locStr&&!isStatic?`<div class="evt-sub">${locStr}</div>`:''}
+        ${instStr&&!isStatic?`<div class="evt-sub">Instructor: ${instStr}</div>`:''}
+        ${coStr&&!isStatic?`<div class="evt-sub">Co-Instructor: ${coStr}</div>`:''}
+      </div>`;
+    }
+    col.innerHTML=h;
+  }
+}
+
+function badgeHTML(type){
+  if(type==='students') return '<span class="evt-badge b-stu">Students</span>';
+  if(type==='teachers') return '<span class="evt-badge b-tea">Teachers</span>';
+  if(type==='combined') return '<span class="evt-badge b-comb">All</span>';
+  return '<span class="evt-badge b-brk">Break</span>';
+}
+
+let lastHash='';
+async function fetchData(){
+  try{
+    const res=await fetch(BLOB_URL);
+    if(!res.ok) return;
+    const data=await res.json();
+    const hash=JSON.stringify(data);
+    if(hash!==lastHash){
+      lastHash=hash;
+      events=data.events||[];
+      render();
+    }
+  }catch(e){console.warn('Fetch failed',e);}
+}
+
+async function init(){
+  await fetchData();
+  render();
+  setInterval(fetchData,5000);
+}
+
+window.addEventListener('resize',()=>render());
+init();
+</script>
+</body>
+</html>

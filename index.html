@@ -411,7 +411,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1
     <span class="saved-flash" id="savedFlash">Saved!</span>
     <button class="btn btn-reset" onclick="resetData()">Reset</button>
     <button class="btn btn-add" onclick="addEvent()">+ Add</button>
-    <button class="btn" onclick="savePDF()" style="border-color:#5a5aaa;color:#a0a0ee">PDF</button>
+    <button class="btn" onclick="window.open('view.html','_blank')" style="border-color:#5a5aaa;color:#a0a0ee">Participant View</button>
   </div>
 </header>
 
@@ -684,29 +684,23 @@ const INST_KEY = 'genCyberInstructors2026';
 let roster = ['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
 
 const BLOB_API='https://jsonblob.com/api/jsonBlob';
-let blobId=null;
-
-function getBlobIdFromHash(){
-  const h=location.hash;
-  const m=h.match(/blob=([a-f0-9-]+)/i);
-  return m?m[1]:null;
-}
+const BLOB_ID='019d8f4c-cf1d-7cfa-b44f-73167cc0207c';
+const BLOB_URL=BLOB_API+'/'+BLOB_ID;
 
 async function loadData(){
-  // Try cloud first
-  blobId=getBlobIdFromHash();
-  if(blobId){
-    try{
-      const res=await fetch(BLOB_API+'/'+blobId);
-      if(res.ok){
-        const data=await res.json();
-        events=data.events||defaultEvents();
-        roster=data.roster||['Lindsay','April','Jon','Kevin'];
+  // Try cloud
+  try{
+    const res=await fetch(BLOB_URL);
+    if(res.ok){
+      const data=await res.json();
+      if(data.events&&data.events.length){
+        events=data.events;
+        roster=data.roster||['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
         nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;
         return;
       }
-    }catch(e){console.warn('Cloud load failed, using local',e);}
-  }
+    }
+  }catch(e){console.warn('Cloud load failed, using local',e);}
   // Fallback to localStorage
   const raw=localStorage.getItem(STORE_KEY);
   if(raw){
@@ -719,38 +713,22 @@ async function loadData(){
 
 async function saveData(){
   const fl=document.getElementById('savedFlash');
-  fl.textContent='Saving...';fl.classList.add('show');
+  fl.textContent='Syncing...';fl.classList.add('show');
 
   const payload=JSON.stringify({events,roster});
-  // Always save locally
+  // Save locally
   localStorage.setItem(STORE_KEY,JSON.stringify(events));
   localStorage.setItem(INST_KEY,JSON.stringify(roster));
 
   try{
-    if(blobId){
-      // Update existing blob
-      await fetch(BLOB_API+'/'+blobId,{method:'PUT',headers:{'Content-Type':'application/json'},body:payload});
-    } else {
-      // Create new blob
-      const res=await fetch(BLOB_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:payload});
-      if(res.ok){
-        // Try x-jsonblob-id header, then Location header, then response URL
-        const id=res.headers.get('x-jsonblob-id')
-          ||(res.headers.get('Location')||'').split('/').pop()
-          ||(res.url||'').split('/').pop();
-        if(id&&id.length>5){
-          blobId=id;
-          location.hash='blob='+blobId;
-        }
-      }
-    }
-    fl.textContent='Saved & Synced!';
-    lastHash=payload; // prevent poll from re-rendering our own save
+    await fetch(BLOB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:payload});
+    fl.textContent='Synced!';
+    lastHash=payload;
   }catch(e){
     console.warn('Cloud save failed',e);
     fl.textContent='Saved locally';
   }
-  setTimeout(()=>fl.classList.remove('show'),1800);
+  setTimeout(()=>fl.classList.remove('show'),1500);
 }
 
 function resetData(){
@@ -760,8 +738,7 @@ function resetData(){
   events=defaultEvents();
   roster=['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
   render();
-  // Also update cloud if connected
-  if(blobId) saveData();
+  saveData();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -823,9 +800,9 @@ let lastHash='';
 function dataHash(){return JSON.stringify({events,roster});}
 
 async function pollCloud(){
-  if(!blobId||drag) return; // skip during drag or if no blob
+  if(drag) return; // skip during drag
   try{
-    const res=await fetch(BLOB_API+'/'+blobId);
+    const res=await fetch(BLOB_URL);
     if(!res.ok) return;
     const data=await res.json();
     const remote=JSON.stringify(data);
@@ -1352,9 +1329,6 @@ function addToPool(){
   openModalNew(ev);
 }
 
-function savePDF(){
-  window.print();
-}
 
 document.getElementById('modalBg').addEventListener('click',e=>{
   if(e.target===e.currentTarget) closeModal();
