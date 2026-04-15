@@ -741,6 +741,7 @@ async function saveData(){
       }
     }
     fl.textContent='Saved & Synced!';
+    lastHash=payload; // prevent poll from re-rendering our own save
   }catch(e){
     console.warn('Cloud save failed',e);
     fl.textContent='Saved locally';
@@ -807,6 +808,39 @@ function render(){
   renderRoster();
 }
 
+// Render + auto-save to cloud (call after any data mutation)
+function syncRender(){
+  render();
+  saveData();
+}
+
+// Poll cloud for changes from other users
+let lastHash='';
+function dataHash(){return JSON.stringify({events,roster});}
+
+async function pollCloud(){
+  if(!blobId||drag) return; // skip during drag or if no blob
+  try{
+    const res=await fetch(BLOB_API+'/'+blobId);
+    if(!res.ok) return;
+    const data=await res.json();
+    const remote=JSON.stringify(data);
+    if(remote!==lastHash){
+      events=data.events||events;
+      roster=data.roster||roster;
+      nextId=events.reduce((mx,e)=>Math.max(mx,e.id),0)+1;
+      lastHash=remote;
+      render();
+    }
+  }catch(e){}
+}
+
+// Start polling after init (every 5 seconds)
+function startPolling(){
+  lastHash=JSON.stringify({events,roster});
+  setInterval(pollCloud,5000);
+}
+
 function renderRoster(){
   const el=document.getElementById('instList');
   el.innerHTML=roster.map((name,i)=>
@@ -821,13 +855,13 @@ function addInstructor(){
   if(roster.includes(trimmed)){alert('Already in roster.');return;}
   roster.push(trimmed);
   roster.sort((a,b)=>a.localeCompare(b));
-  render();
+  syncRender();
 }
 
 function removeInstructor(i){
   if(!confirm('Remove "'+roster[i]+'" from roster?')) return;
   roster.splice(i,1);
-  render();
+  syncRender();
 }
 
 function renderTimeGutter(){
@@ -1048,7 +1082,7 @@ document.addEventListener('pointerup',e=>{
   if(drag.ghost) drag.ghost.remove();
   drag.el.style.opacity='';
   drag=null;
-  render();
+  syncRender();
 });
 
 function getDropPos(cx,cy){
@@ -1194,7 +1228,7 @@ document.getElementById('ctxDup').addEventListener('click',()=>{
     instructors:[...orig.instructors],coInstructors:[...orig.coInstructors]};
   dup.title=orig.title+' (copy)';
   events.push(dup);
-  render();
+  syncRender();
 });
 
 document.getElementById('ctxDel').addEventListener('click',()=>{
@@ -1202,7 +1236,7 @@ document.getElementById('ctxDel').addEventListener('click',()=>{
   if(ctxEid==null) return;
   if(!confirm('Delete this event?')) return;
   events=events.filter(e=>e.id!==ctxEid);
-  render();
+  syncRender();
 });
 
 document.addEventListener('keydown',e=>{
@@ -1291,7 +1325,7 @@ function saveModal(e){
   ev.notes=f.notes.value.trim();
   ev.confirmed=f.confirmed.value===''?null:f.confirmed.value==='true';
   closeModal();
-  render();
+  syncRender();
 }
 
 function delEvent(){
@@ -1299,7 +1333,7 @@ function delEvent(){
   if(!confirm('Delete this event?')) return;
   events=events.filter(e=>e.id!==modalEid);
   closeModal();
-  render();
+  syncRender();
 }
 
 function addEvent(){
@@ -1346,6 +1380,7 @@ async function initApp(){
   await loadData();
   window.addEventListener('resize',()=>render());
   render();
+  startPolling();
 }
 
 // Auto-unlock if already authenticated this session
