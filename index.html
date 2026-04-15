@@ -709,26 +709,38 @@ async function loadData(){
   } else {events=defaultEvents();}
   const ri=localStorage.getItem(INST_KEY);
   if(ri){try{roster=JSON.parse(ri);}catch(e){}}
+  // Push defaults to cloud so participant view has data
+  saveData();
 }
 
 async function saveData(){
   const fl=document.getElementById('savedFlash');
-  fl.textContent='Syncing...';fl.classList.add('show');
+  if(fl){fl.textContent='Syncing...';fl.classList.add('show');}
 
   const payload=JSON.stringify({events,roster});
   // Save locally
-  localStorage.setItem(STORE_KEY,JSON.stringify(events));
-  localStorage.setItem(INST_KEY,JSON.stringify(roster));
+  try{
+    localStorage.setItem(STORE_KEY,JSON.stringify(events));
+    localStorage.setItem(INST_KEY,JSON.stringify(roster));
+  }catch(e){}
 
   try{
-    await fetch(BLOB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:payload});
-    fl.textContent='Synced!';
-    lastHash=payload;
+    const res=await fetch(BLOB_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:payload
+    });
+    if(res.ok){
+      if(fl) fl.textContent='Synced!';
+      lastHash=payload;
+    } else {
+      if(fl) fl.textContent='Sync error '+res.status;
+    }
   }catch(e){
     console.warn('Cloud save failed',e);
-    fl.textContent='Saved locally';
+    if(fl) fl.textContent='Offline — saved locally';
   }
-  setTimeout(()=>fl.classList.remove('show'),1500);
+  if(fl) setTimeout(()=>fl.classList.remove('show'),1500);
 }
 
 function resetData(){
