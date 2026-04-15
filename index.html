@@ -732,11 +732,16 @@ async function saveData(){
       await fetch(BLOB_API+'/'+blobId,{method:'PUT',headers:{'Content-Type':'application/json'},body:payload});
     } else {
       // Create new blob
-      const res=await fetch(BLOB_API,{method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+      const res=await fetch(BLOB_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:payload});
       if(res.ok){
-        const loc=res.headers.get('Location')||'';
-        blobId=loc.split('/').pop();
-        if(blobId) location.hash='blob='+blobId;
+        // Try x-jsonblob-id header, then Location header, then response URL
+        const id=res.headers.get('x-jsonblob-id')
+          ||(res.headers.get('Location')||'').split('/').pop()
+          ||(res.url||'').split('/').pop();
+        if(id&&id.length>5){
+          blobId=id;
+          location.hash='blob='+blobId;
+        }
       }
     }
     fl.textContent='Saved & Synced!';
