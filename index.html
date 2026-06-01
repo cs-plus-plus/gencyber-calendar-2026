@@ -413,7 +413,6 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0f1
   </div>
   <div class="hdr-actions">
     <span class="saved-flash" id="savedFlash">Saved!</span>
-    <button class="btn btn-reset" onclick="resetData()">Reset</button>
     <button class="btn btn-add" onclick="addEvent()">+ Add</button>
     <button class="btn" onclick="window.open('view.html','_blank')" style="border-color:#5a5aaa;color:#a0a0ee">Participant View</button>
   </div>
@@ -756,13 +755,8 @@ async function saveData(){
 }
 
 function resetData(){
-  if(!confirm('Reset all events to default pool? This will clear your saved layout.')) return;
-  localStorage.removeItem(STORE_KEY);
-  localStorage.removeItem(INST_KEY);
-  events=defaultEvents();
-  roster=['April','Bryan','Bryson','Jon','Kevin','Lindsay','Tamirat'];
-  render();
-  saveData();
+  /* Reset disabled 2026-06-01 to prevent accidental data loss. */
+  console.warn('Reset is disabled.');
 }
 
 // ═══════════════════════════════════════════════════════
